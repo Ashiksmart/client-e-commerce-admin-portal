@@ -1,0 +1,2 @@
+export let SETPERMISSION = 'SETPERMISSION'
+export let ALLSCREEN = 'ALLSCREEN'
