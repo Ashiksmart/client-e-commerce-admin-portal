@@ -19,9 +19,9 @@
 // const AUTH_BASE_URL = 'http://174.138.123.234:7004'
 
 const currentDomain = 'localhost'
-const BASE_URL = 'http://localhost:8001'
+const BASE_URL = 'https://server-e-commerce-logic-service.onrender.com'
 const BASE_URL_WOP = 'http://localhost'
-const AUTH_BASE_URL = 'http://localhost:8000'
+const AUTH_BASE_URL = 'https://server-e-commerce-api-auth-service.onrender.com'
 
 const Constants = {
   DOMAIN: currentDomain,

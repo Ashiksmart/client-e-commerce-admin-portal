@@ -145,12 +145,9 @@ export default function Products(props) {
 
 
   useEffect(() => {
-
     setfilter({})
     fetAllTemplates()
     ProductLimitation()
-    console.log(getToken()
-      , "getToken()");
     SetAppPermission({
       create: false,
       update: false,
@@ -800,7 +797,7 @@ export default function Products(props) {
       },
       product: {
         originalPrice: originalPrice,
-        ["offerPercent%"]: offerPercent,
+        "offerPercent%": offerPercent,
         discountedPricePerProduct: discountedPricePerItem,
         totalDiscountedPriceWithoutTax: totalDiscountedPrice,
         totalDiscountedPriceWithTax: totalDiscountedPrice + totalGstAmount,
@@ -1338,100 +1335,50 @@ export default function Products(props) {
     setTableShow(false)
     console.log(Mrkapp_id);
     try {
-      let callTemp = []
-      if (screen == "product") {
-        callTemp.push("PROD_CU", "PROD_ATTR_CU", "SERV_CU")
-      }
-      else if (screen == "category") {
-        callTemp.push("PROD_CAT")
-      }
-      // else if (screen == "assign") {
-      //   callTemp.push("PROD_ASSIGN_U")
-      // }
-      else if (screen == "brand") {
-        callTemp.push("BRAND_CU")
-      }
-      else if (screen == "teams") {
-        callTemp.push("TEAMS")
-      }
-      else if (screen == "attributes_group") {
-        callTemp.push("ATTR_GRP_CU")
-      }
-      else if (screen == "attributes") {
-        callTemp.push("ATTR_CU")
-      }
-      else if (screen == "crm_status" || screen == "crm_disposition") {
-        callTemp.push("CRM_STATUS_CU")
-      }
-      else if (screen == "orders") {
-        callTemp.push("ORDER")
-      }
-      else if (screen == "taskbacklog") {
-        callTemp.push("INVOICE")
-      }
-      else if (screen == "task") {
-        callTemp.push("TASK")
-      }
+      const screenMappings = {
+        product: ["PROD_CU", "PROD_ATTR_CU", "SERV_CU"],
+        category: ["PROD_CAT"],
+        brand: ["BRAND_CU"],
+        teams: ["TEAMS"],
+        attributes_group: ["ATTR_GRP_CU"],
+        attributes: ["ATTR_CU"],
+        crm_status: ["CRM_STATUS_CU"],
+        crm_disposition: ["CRM_STATUS_CU"],
+        orders: ["ORDER"],
+        taskbacklog: ["INVOICE"],
+        task: ["TASK"]
+      };
+      
+      let callTemp = screenMappings[screen] || [];
 
-      let template = await fetchProxy({
-        name: {
-          "$in": callTemp
-        },
-      }, 'template', [], null, 1, 100, sort)
-
-      // let template = await ServiceProxy.business.find('b2b', 'template', 'view', {
-      //   name: {
-      //     "$in": callTemp
-      //   },
-      // }, [], 1, 100
-      // )
-      if (template.cursor.totalRecords != 0) {
+      let template = await fetchProxy({ name: { "$in": callTemp }, }, 'template', [], null, 1, 100, sort)
+      if (template.records.length > 0) {
         let sort = [{
           column: "position",
           order: 'asc'
         }]
         template.records.forEach(async (elm) => {
-          let templatefields = await ServiceProxy.business
-            .find('b2b', 'templates_field', 'view', {
-              template_id: { $eq: elm.id.toString() },
-              account_id: { $eq: getToken().account_id },
-              app_id: { "$.app_id": Mrkapp_id }
-            },
-              [],
-              null,
-              null,
-              sort
-            )
+          let templatefields = await ServiceProxy.business.find('b2b', 'templates_field', 'view', { template_id: { $eq: elm.id.toString() }, account_id: { $eq: getToken().account_id }, app_id: { "$.app_id": Mrkapp_id } }, [], null, null, sort )
 
           if (templatefields.cursor.totalRecords > 0) {
             if (screen == "product") {
 
               if (elm.name == 'PROD_CU') {
-                let filtTempData = templatefields.records
-                CustomFieldhandel(filtTempData, fieldDyanamicBind, getToken().partner_id === null && getToken().roles !== 'Client' ? 'Brand' : getToken().partner_id !== null ? 'Partner' : '')
+
+                const {partner_id, roles} = getToken()
+                const type = partner_id === null ? (roles !== 'Client' ? 'Brand' : '') : 'Partner';
+
+                const filtTempData = templatefields.records
+                CustomFieldhandel(filtTempData, fieldDyanamicBind, type)
                   .then((res) => {
-                    settemplatefilter({
-                      template: elm,
-                      fields: res.field
-                    })
+                    settemplatefilter({ template: elm, fields: res.field })
                   })
                 console.log(templatefields);
-                CustomFieldhandel(templatefields.records, fieldDyanamicBind, {},
-                  getToken().partner_id === null && getToken().roles !== 'Client' ? 'Brand' : getToken().partner_id !== null ? 'Partner' : '')
+                CustomFieldhandel(filtTempData, fieldDyanamicBind, {}, type)
                   .then((res) => {
-                    setTemplateApiFlds({
-                      template: elm,
-                      fields: res.field,
-                      skipped: [],
-                    })
+                    setTemplateApiFlds({ template: elm, fields: res.field, skipped: [], })
                     console.log(res);
-                    let tableFlds = res.header
-                    let header = tableFlds.map((item) => {
-                      return {
-                        ...item,
-                        value: item.value == "sub_category_id" ? item.value : `details.${item.value}`
-                      }
-                    })
+                    let header = res.header.map((h) => ({ ...h, value: h.value == "sub_category_id" ? h.value : `details.${h.value}` }))
 
                     header.push({
                       filterable: false,
